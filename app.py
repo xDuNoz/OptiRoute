@@ -20,6 +20,10 @@ def _limpio(valor):
         return {k: _limpio(v) for k, v in valor.items()}
     if isinstance(valor, (list, tuple)):
         return [_limpio(v) for v in valor]
+    if hasattr(valor, "item") and not hasattr(valor, "__len__"):
+        valor = valor.item()
+    if isinstance(valor, bool):
+        return valor
     if isinstance(valor, float):
         return None if (math.isnan(valor) or math.isinf(valor)) else round(valor, 6)
     return valor
@@ -51,9 +55,22 @@ def api_resolver():
         sens = analizar(r["problema"], r["optimo"])
     except (KeyError, ValueError, RuntimeError) as e:
         return jsonify({"error": str(e)}), 400
+    except Exception as e:  # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Error interno: {type(e).__name__}: {e}"}), 500
 
+    try:
+        return jsonify(_respuesta(r, p, sens))
+    except Exception as e:  # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Error al preparar la respuesta: {type(e).__name__}: {e}"}), 500
+
+
+def _respuesta(r, p, sens):
     pb = r["problema"]
-    return jsonify({
+    return _limpio({
         "problema": {
             "origenes": pb.origenes, "destinos": pb.destinos,
             "oferta": _limpio(list(pb.oferta)), "demanda": _limpio(list(pb.demanda)),
@@ -79,7 +96,7 @@ def api_resolver():
         "solver": {"nombre": r["solver"]["solver"], "estado": r["solver"]["estado"],
                    "costo": r["solver"]["costo"], "asignacion": _limpio(r["solver"]["asignacion"])},
         "coincide": r["coincide"],
-        "sensibilidad": _limpio(sens),
+        "sensibilidad": sens,
     })
 
 

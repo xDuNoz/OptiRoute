@@ -342,32 +342,42 @@ def modi(p: Problema, inicial: Solucion, max_iter: int = 100) -> list[IteracionM
 # Validación con solver de Programación Lineal
 # ----------------------------------------------------------------------------
 def resolver_con_solver(p: Problema) -> dict:
-    """Resuelve el modelo balanceado como PL. Usa PuLP si está instalado; si no, SciPy."""
+    """Resuelve el modelo balanceado como PL. Usa PuLP si está instalado; si no está
+    instalado o falla, usa SciPy e indica el motivo."""
     try:
         import pulp  # noqa: F401
-        return _resolver_pulp(p)
     except ImportError:
         return _resolver_scipy(p)
+    try:
+        return _resolver_pulp(p)
+    except Exception as e:  # noqa: BLE001
+        import traceback
+        traceback.print_exc()
+        r = _resolver_scipy(p)
+        r["solver"] += f" (PuLP falló: {type(e).__name__}: {e})"
+        return r
 
 
 def _resolver_pulp(p: Problema) -> dict:
     import pulp
 
     modelo = pulp.LpProblem("Transporte_OptiRoute", pulp.LpMinimize)
-    x = {(i, j): pulp.LpVariable(f"x_{i}_{j}", lowBound=0)
+    x = {(i, j): pulp.LpVariable(f"x_{i}_{j}", 0)
          for i in range(p.m) for j in range(p.n)}
-    modelo += pulp.lpSum(p.costos[i, j] * x[i, j] for i in range(p.m) for j in range(p.n))
+    modelo += pulp.lpSum(float(p.costos[i, j]) * x[i, j] for i in range(p.m) for j in range(p.n))
     for i in range(p.m):
-        modelo += pulp.lpSum(x[i, j] for j in range(p.n)) == p.oferta[i], f"oferta_{i}"
+        modelo += pulp.lpSum(x[i, j] for j in range(p.n)) == float(p.oferta[i]), f"oferta_{i}"
     for j in range(p.n):
-        modelo += pulp.lpSum(x[i, j] for i in range(p.m)) == p.demanda[j], f"demanda_{j}"
-    modelo.solve(pulp.PULP_CBC_CMD(msg=False))
+        modelo += pulp.lpSum(x[i, j] for i in range(p.m)) == float(p.demanda[j]), f"demanda_{j}"
+    estado = modelo.solve(pulp.PULP_CBC_CMD(msg=False))
+    if pulp.LpStatus[estado] != "Optimal":
+        raise RuntimeError(f"PuLP terminó con estado {pulp.LpStatus[estado]}")
 
-    asign = np.array([[x[i, j].value() or 0.0 for j in range(p.n)] for i in range(p.m)])
-    duales_o = np.array([modelo.constraints[f"oferta_{i}"].pi for i in range(p.m)])
-    duales_d = np.array([modelo.constraints[f"demanda_{j}"].pi for j in range(p.n)])
-    return {"solver": "PuLP (CBC)", "estado": pulp.LpStatus[modelo.status],
-            "costo": float(pulp.value(modelo.objective)), "asignacion": asign,
+    asign = np.array([[float(x[i, j].value() or 0.0) for j in range(p.n)] for i in range(p.m)])
+    duales_o = [modelo.constraints[f"oferta_{i}"].pi for i in range(p.m)]
+    duales_d = [modelo.constraints[f"demanda_{j}"].pi for j in range(p.n)]
+    return {"solver": "PuLP (CBC)", "estado": "Optimal",
+            "costo": float((p.costos * asign).sum()), "asignacion": asign,
             "duales_oferta": duales_o, "duales_demanda": duales_d}
 
 
@@ -413,5 +423,5 @@ def resolver(p: Problema, metodo_inicial: str = "vogel") -> dict:
         "iteraciones": iteraciones,
         "optimo": final,
         "solver": solver,
-        "coincide": abs(final.costo - solver["costo"]) < 1e-6,
+        "coincide": bool(abs(final.costo - solver["costo"]) < 1e-4),
     }

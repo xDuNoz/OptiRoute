@@ -131,7 +131,9 @@ async function resolverProblema() {
   const resp = await fetch("/api/resolver", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cuerpo),
   });
-  const r = await resp.json();
+  let r;
+  try { r = await resp.json(); }
+  catch { $("error").textContent = `El servidor respondió con error ${resp.status}. Revisa la ventana donde corre python app.py.`; return; }
   if (!resp.ok) { $("error").textContent = r.error; return; }
   estado.resultado = r;
   estado.iter = 0;
