@@ -1,0 +1,15 @@
+{
+  "nombre": "Distribuidora del Noreste S.A. de C.V.",
+  "unidad": "tarimas/semana",
+  "origenes": ["Monterrey", "Saltillo", "Nuevo Laredo"],
+  "destinos": ["Reynosa", "Matamoros", "Monclova", "Cd. Victoria"],
+  "oferta": [300, 200, 250],
+  "demanda": [180, 150, 160, 170],
+  "costos": [[22, 32, 20, 29], [30, 39, 19, 36], [25, 34, 30, 44]],
+  "coordenadas": {
+    "Monterrey": [25.6866, -100.3161], "Saltillo": [25.4232, -101.0053],
+    "Nuevo Laredo": [27.4779, -99.5496], "Reynosa": [26.0508, -98.2979],
+    "Matamoros": [25.8690, -97.5027], "Monclova": [26.9080, -101.4215],
+    "Cd. Victoria": [23.7369, -99.1411]
+  }
+}

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OptiRoute · Modelo de Transporte</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
+</head>
+<body>
+<header>
+  <div class="marca">
+    <span class="logo">OR</span>
+    <div>
+      <h1>OptiRoute</h1>
+      <p>Optimización de distribución · Modelo de Transporte</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="panel-titulo">
+      <h2><span class="num">1</span> Datos del problema</h2>
+      <div class="acciones">
+        <button class="sec" id="btn-ejemplo">Cargar caso de estudio</button>
+        <button class="sec" id="btn-mas-origen">+ Origen</button>
+        <button class="sec" id="btn-menos-origen">− Origen</button>
+        <button class="sec" id="btn-mas-destino">+ Destino</button>
+        <button class="sec" id="btn-menos-destino">− Destino</button>
+      </div>
+    </div>
+    <p class="ayuda">Costos en $ por unidad. Edita nombres y valores directamente en la tabla.</p>
+    <div class="tabla-scroll"><table id="tabla-datos" class="datos"></table></div>
+    <div id="aviso-balance" class="aviso"></div>
+    <div class="fila-control">
+      <label>Solución inicial
+        <select id="metodo">
+          <option value="vogel">Aproximación de Vogel</option>
+          <option value="costo_minimo">Costo mínimo</option>
+          <option value="noroeste">Esquina noroeste</option>
+        </select>
+      </label>
+      <button id="btn-resolver">Resolver</button>
+    </div>
+    <div id="error" class="error"></div>
+  </section>
+
+  <div id="resultados" hidden>
+    <section class="resumen" id="resumen"></section>
+
+    <section class="panel">
+      <h2><span class="num">2</span> Soluciones iniciales</h2>
+      <div id="comparacion"></div>
+      <details class="pasos">
+        <summary>Ver el procedimiento del método seleccionado</summary>
+        <ol id="pasos-inicial"></ol>
+      </details>
+    </section>
+
+    <section class="panel">
+      <h2><span class="num">3</span> Optimización con MODI</h2>
+      <p class="ayuda">En cada iteración: u<sub>i</sub> + v<sub>j</sub> = c<sub>ij</sub> en las celdas básicas.
+        Los costos reducidos (c<sub>ij</sub> − u<sub>i</sub> − v<sub>j</sub>) aparecen en las celdas vacías;
+        si alguno es negativo, esa celda entra a la base siguiendo su ciclo.</p>
+      <div class="leyenda">
+        <span><i class="cuadro basica"></i>Celda básica</span>
+        <span><i class="cuadro entra"></i>Entra a la base</span>
+        <span><i class="cuadro sale"></i>Sale de la base</span>
+        <span><b>+ / −</b> Signo en el ciclo</span>
+      </div>
+      <div class="nav-iter">
+        <button class="sec" id="btn-ant">‹ Anterior</button>
+        <span id="etiqueta-iter"></span>
+        <button class="sec" id="btn-sig">Siguiente ›</button>
+      </div>
+      <div id="iteracion"></div>
+    </section>
+
+    <section class="panel">
+      <h2><span class="num">4</span> Solución óptima y validación</h2>
+      <div id="optimo"></div>
+      <div id="validacion"></div>
+    </section>
+
+    <section class="panel">
+      <h2><span class="num">5</span> Análisis de sensibilidad</h2>
+      <p class="ayuda">Calculado a partir de la base óptima de MODI: los precios sombra salen de los
+        multiplicadores u<sub>i</sub> y v<sub>j</sub>, y los rangos indican hasta dónde puede cambiar cada dato
+        sin que cambie el plan óptimo.</p>
+      <div id="interpretacion" class="interpretacion"></div>
+      <div class="dos-col">
+        <div><h3>Oferta (capacidad de los orígenes)</h3><div id="sens-oferta"></div></div>
+        <div><h3>Demanda (destinos)</h3><div id="sens-demanda"></div></div>
+      </div>
+      <h3>Rangos de los costos unitarios</h3>
+      <div class="tabla-scroll" id="sens-rutas"></div>
+    </section>
+
+    <section class="panel">
+      <h2><span class="num">6</span> Escenarios: ¿qué pasa si…?</h2>
+      <p class="ayuda">Guarda la solución actual como base, cambia cualquier dato en la tabla de la sección 1
+        y vuelve a resolver para comparar.</p>
+      <div class="fila-control">
+        <button class="sec" id="btn-fijar">Guardar solución actual como base</button>
+        <button class="sec" id="btn-restaurar" disabled>Restaurar datos de la base</button>
+        <span id="estado-base" class="ayuda"></span>
+      </div>
+      <div id="comparacion-escenario"></div>
+    </section>
+
+    <section class="panel" id="panel-mapa">
+      <h2><span class="num">7</span> Mapa de rutas</h2>
+      <p class="ayuda">El grosor de cada línea es proporcional a las unidades enviadas. Disponible cuando los
+        orígenes y destinos tienen coordenadas (caso de estudio).</p>
+      <div id="mapa"></div>
+      <div id="mapa-aviso" class="ayuda"></div>
+    </section>
+  </div>
+</main>
+
+<footer>Investigación de Operaciones · Unidad 6 · Proyecto Integrador</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
